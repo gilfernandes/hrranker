@@ -1,6 +1,5 @@
 from pathlib import Path
-import enum
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict
 
 from pydantic import BaseModel, Field
 
