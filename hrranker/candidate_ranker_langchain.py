@@ -15,6 +15,8 @@ from hrranker.hr_model import (
 )
 from hrranker.log_init import logger
 
+import asyncio
+
 import chainlit
 
 SKILL_TEMPLATE = PromptTemplate.from_template(
@@ -89,14 +91,21 @@ def process_skills(
         logger.info(f"Response: {number_of_years_response}")
 
 
-if __name__ == "__main__":
+async def main():
     path = cfg.doc_location
     docs = extract_data(path)
     logger.info(f"Read {len(docs)} documents")
 
-    candidate_infos = process_docs(docs)
+    candidate_infos = await process_docs(docs)
     candidate_infos = sort_candidate_infos(candidate_infos)
 
     logger.info("")
     for candidate_info in candidate_infos:
         logger.info(candidate_info)
+
+
+if __name__ == "__main__":
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+
