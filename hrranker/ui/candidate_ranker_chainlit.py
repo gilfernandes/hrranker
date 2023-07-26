@@ -30,12 +30,12 @@ def write_temp_file(file) -> Document:
 async def init():
     while True:
         skills = await gather_elements(
-            "Please enter the list of skills as a comma separated list, like e.g: `Wordpress, PHP, SQL`",
+            "Please enter the list of skills as a comma separated list, like e.g: `Wordpress, Programming in PHP, Programming in Javascript, CSS, Programming in SQL`",
             "skills",
             None,
         )
         weights = await gather_elements(
-            f"Please enter the list of ({len(skills)}) weights as a comma separated list, like e.g: `4, 3, 2`",
+            f"Please enter the list of ({len(skills)}) weights as a comma separated list, like e.g: `4, 3, 2, 1, 1`",
             "weights",
             skills,
         )
@@ -60,6 +60,11 @@ async def gather_elements(content: str, item_name: str, previous_elements: List[
         ).send()
         if res:
             items = [s.strip() for s in res["content"].split(",")]
+            if previous_elements and len(items) != len(previous_elements):
+                await cl.Message(
+                    content=f"The weights and the skills do not have the same length.",
+                ).send()
+                continue
             items_strings = []
             if previous_elements:
                 for i, p in enumerate(previous_elements):
@@ -90,12 +95,12 @@ async def handle_rankings(skills: List[str], weights: List[int]):
             file_names = "\n- ".join([f"{f.name}" for f in files])
             docs = [write_temp_file(file) for file in files]
 
-            msg = cl.Message(
-                content=f"### Processing \n\n- {file_names}. \n\nYou have currently **{len(docs)}** files."
+            msg = cl.Message(content="")
+            await msg.stream_token(
+                f"### Processing \n\n- {file_names}. \n\nYou have currently **{len(docs)}** files.\n\n"
             )
-            await msg.send()
 
-            candidate_infos = process_docs(docs, skills)
+            candidate_infos = await process_docs(docs, skills, msg)
             candidate_infos: List[CandidateInfo] = sort_candidate_infos(candidate_infos)
 
             ranking_text = await execute_candidates(candidate_infos)
@@ -123,6 +128,6 @@ async def execute_candidates(candidate_infos: List[CandidateInfo]):
         ranking_text += f"*{source_file.stem}*\n\n"
         for nyr in condidate_info.number_of_years_responses:
             number_of_years_response = nyr.number_of_years_response
-            ranking_text += f"  - Skill: {number_of_years_response.skill}, years: {number_of_years_response.numberOfYears}\n"
+            ranking_text += f"  - Skill: {number_of_years_response.skill}, years: {number_of_years_response.number_of_years_with_skill}\n"
 
     return ranking_text

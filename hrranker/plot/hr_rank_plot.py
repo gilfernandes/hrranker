@@ -19,7 +19,8 @@ from typing import List
 def create_barchart(candidate_infos: List[CandidateInfo]) -> Path:
     x_axis = [ci.name_of_candidate_response.name for ci in candidate_infos]
     y_axis = [ci.score for ci in candidate_infos]
-    figure(figsize=(15, 10), dpi=80)
+    fig = figure(figsize=(18, 10), dpi=80)
+    fig.subplots_adjust(bottom=0.2)
     font = {"size": 22}
 
     matplotlib.rc("font", **font)

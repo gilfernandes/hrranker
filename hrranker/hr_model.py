@@ -23,20 +23,34 @@ class NameOfCandidateResponse(BaseModel):
     gender: str = Field(
         ...,
         description="describes whether the candidate is male or female. It can e empty if this is not clear from the text.",
-        enum=["female", "male", "unknown"],
+        enum=["female", "male", "unknown", "none"],
     )
 
 
 class NumberOfYearsResponse(BaseModel):
-    has_experience: bool = Field(
+    has_skill: bool = Field(
         ...,
         description="describes whether the candidate has experience in the current skill",
     )
-    numberOfYears: int = Field(
+    number_of_years_with_skill: int = Field(
         ...,
         description="describes how many years of experience the candidate has in the current skill",
     )
     skill: str
+
+
+def create_skill_schema(skill: str) -> Dict[str, Any]:
+    skill = skill.replace(" ", "_")
+    has_skill_field = f"document_mentions_{skill}_experience"
+    number_of_years_field = f"number_of_years_with_{skill}"
+    schema = {
+        "properties": {
+            has_skill_field: {"type": "boolean"},
+            number_of_years_field: {"type": "integer"},
+            "skill": {"type": "string"},
+        }
+    }
+    return schema, has_skill_field, number_of_years_field
 
 
 class NumberOfYearsResponseWithWeight(BaseModel):
@@ -65,15 +79,18 @@ class CandidateInfo:
         score = 0
         for number_of_years_response in self.number_of_years_responses:
             nyr = number_of_years_response.number_of_years_response
-            if nyr.has_experience:
-                score += nyr.numberOfYears * number_of_years_response.score_weight
+            if nyr.has_skill:
+                score += (
+                    nyr.number_of_years_with_skill
+                    * number_of_years_response.score_weight
+                )
         self.score = score
 
     def __repr__(self) -> str:
         return f"Name: {self.name_of_candidate_response.name}, score: {self.score}, source_file: {self.source_file}"
 
 
-def sort_candidate_infos(candidate_infos: List[CandidateInfo]):
+def sort_candidate_infos(candidate_infos: List[CandidateInfo]) -> List[CandidateInfo]:
     return sorted(candidate_infos, key=lambda x: x.score, reverse=True)
 
 
@@ -137,7 +154,7 @@ def parse_number_of_year_response_json(
     numberOfYears = res.get("numberOfYears")
     skill = res.get("skill")
     response = NumberOfYearsResponse(
-        has_experience=has_experience, numberOfYears=numberOfYears, skill=skill
+        has_skill=has_experience, number_of_years_with_skill=numberOfYears, skill=skill
     )
     return response
 
@@ -150,13 +167,22 @@ if __name__ == "__main__":
         "age": 31,
         "gender": "Unknown",
     }
-    ncr = NameOfCandidateResponse(age=25, name="John Doe", gender=Gender.MALE)
-    nyr = NumberOfYearsResponse(has_experience=True, numberOfYears=3, skill="PHP")
+    ncr = NameOfCandidateResponse(
+        age=25, name="John Doe", gender="male", email="john.doe@gmail.com"
+    )
+    nyr = NumberOfYearsResponse(
+        has_skill=True, number_of_years_with_skill=3, skill="PHP"
+    )
     nyr_with_score = NumberOfYearsResponseWithWeight(
         number_of_years_response=nyr, score_weight=2
     )
     nyr_with_scores = [nyr_with_score]
     candidate_info = CandidateInfo(
-        name_of_candidate_response=ncr, number_of_years_responses=nyr_with_scores
+        name_of_candidate_response=ncr,
+        number_of_years_responses=nyr_with_scores,
+        source_file="test.pdf",
     )
     logger.info(f"score: {candidate_info.score}")
+
+    skill_schema, has_skill_field, number_of_years_field = create_skill_schema("OCaml")
+    logger.info(f"skill schema: {skill_schema}")

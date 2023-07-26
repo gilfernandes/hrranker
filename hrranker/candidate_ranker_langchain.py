@@ -1,6 +1,6 @@
 from langchain import PromptTemplate
 from langchain.schema import Document
-from langchain.chains import create_tagging_chain_pydantic
+from langchain.chains import create_tagging_chain_pydantic, create_tagging_chain
 from typing import List
 
 from hrranker.extract_data import extract_data
@@ -10,25 +10,39 @@ from hrranker.hr_model import (
     NameOfCandidateResponse,
     NumberOfYearsResponse,
     NumberOfYearsResponseWithWeight,
+    create_skill_schema,
     sort_candidate_infos,
 )
 from hrranker.log_init import logger
 
+import chainlit
+
 SKILL_TEMPLATE = PromptTemplate.from_template(
     "Based on the following text, how many years does this person have in {technology}.? And tell whether this person has experience with {technology}.\n\n"
 )
-SKILLS = ["Wordpress", "PHP", "Javascript", "CSS"]
-WEIGHTS = [3, 2, 1, 1]
+SKILLS = [
+    "Wordpress",
+    "Programming in PHP",
+    "Programming in Javascript",
+    "CSS",
+    "Programming in Rust",
+    "Programming in Zig",
+]
+WEIGHTS = [3, 2, 1, 1, 1, 1]
 
 
-def process_docs(
-    docs: List[Document], skills: List[str] = SKILLS
+async def process_docs(
+    docs: List[Document], skills: List[str] = SKILLS, cl_msg: chainlit.Message = None
 ) -> List[CandidateInfo]:
     candidate_infos: List[CandidateInfo] = []
     for doc in docs:
         chain = create_tagging_chain_pydantic(NameOfCandidateResponse, cfg.llm)
         name_of_candidate_response = chain.run(doc)
         logger.info(f"Response: {name_of_candidate_response}")
+        if cl_msg:
+            await cl_msg.stream_token(
+                f"Processing {name_of_candidate_response.name}\n\n"
+            )
         number_of_year_responses: List[NumberOfYearsResponseWithWeight] = []
         process_skills(doc, number_of_year_responses, skills)
         candidate_info = CandidateInfo(
@@ -36,7 +50,7 @@ def process_docs(
             number_of_years_responses=number_of_year_responses,
             source_file=doc.metadata["source"],
         )
-        candidate_infos.append(candidate_info)
+        candidate_infos.append(candidate_info),
     return candidate_infos
 
 
@@ -46,11 +60,26 @@ def process_skills(
     skills: List[str] = SKILLS,
     weights: List[int] = WEIGHTS,
 ):
+    page_content = doc.page_content
     for skill, weight in zip(skills, weights):
-        chain = create_tagging_chain_pydantic(NumberOfYearsResponse, cfg.llm)
+        schema, has_skill_field, number_of_years_field = create_skill_schema(skill)
+        chain = create_tagging_chain(schema, cfg.llm)
         # Combine the CV with a question
-        doc.page_content = SKILL_TEMPLATE.format(technology=skill) + doc.page_content
-        number_of_years_response = chain.run(doc)
+        doc.page_content = SKILL_TEMPLATE.format(technology=skill) + page_content
+        number_of_years_response_json = chain.run(doc)
+        number_of_years = (
+            0
+            if number_of_years_response_json[number_of_years_field] == None
+            else number_of_years_response_json[number_of_years_field]
+        )
+        has_skill = (
+            False
+            if not number_of_years_response_json[has_skill_field]
+            else number_of_years_response_json[has_skill_field]
+        )
+        number_of_years_response = NumberOfYearsResponse(
+            has_skill=has_skill, number_of_years_with_skill=number_of_years, skill=skill
+        )
         number_of_year_responses.append(
             NumberOfYearsResponseWithWeight(
                 number_of_years_response=number_of_years_response,
