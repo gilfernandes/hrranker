@@ -85,7 +85,7 @@ async def handle_rankings(skills: List[str], weights: List[int]):
     # Wait for the user to upload a file
     while not files:
         files = await cl.AskFileMessage(
-            content="Please upload a pdf file with the CV of a candidate!",
+            content="Please upload multiple pdf files with the CV of a candidate!",
             accept=["application/pdf"],
             max_files=MAX_FILES,
             timeout=TiMEOUT,
@@ -100,7 +100,7 @@ async def handle_rankings(skills: List[str], weights: List[int]):
                 f"### Processing \n\n- {file_names}. \n\nYou have currently **{len(docs)}** files.\n\n"
             )
 
-            candidate_infos = await process_docs(docs, skills, msg)
+            candidate_infos = await process_docs(docs, skills, weights, msg)
             candidate_infos: List[CandidateInfo] = sort_candidate_infos(candidate_infos)
 
             ranking_text = await execute_candidates(candidate_infos)

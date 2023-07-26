@@ -34,7 +34,10 @@ WEIGHTS = [3, 2, 1, 1, 1, 1]
 
 
 async def process_docs(
-    docs: List[Document], skills: List[str] = SKILLS, cl_msg: chainlit.Message = None
+    docs: List[Document],
+    skills: List[str] = SKILLS,
+    weights: List[int] = WEIGHTS,
+    cl_msg: chainlit.Message = None,
 ) -> List[CandidateInfo]:
     candidate_infos: List[CandidateInfo] = []
     for doc in docs:
@@ -46,7 +49,7 @@ async def process_docs(
                 f"Processing {name_of_candidate_response.name}\n\n"
             )
         number_of_year_responses: List[NumberOfYearsResponseWithWeight] = []
-        process_skills(doc, number_of_year_responses, skills)
+        process_skills(doc, number_of_year_responses, skills, weights)
         candidate_info = CandidateInfo(
             name_of_candidate_response=name_of_candidate_response,
             number_of_years_responses=number_of_year_responses,
@@ -105,7 +108,5 @@ async def main():
 
 
 if __name__ == "__main__":
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
-
