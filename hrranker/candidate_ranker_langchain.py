@@ -28,7 +28,7 @@ SKILLS = [
     "Programming in Javascript",
     "CSS",
     "Programming in Rust",
-    "Programming in Zig",
+    "Programming in OCaml",
 ]
 WEIGHTS = [3, 2, 1, 1, 1, 1]
 
@@ -42,20 +42,23 @@ async def process_docs(
     candidate_infos: List[CandidateInfo] = []
     for doc in docs:
         chain = create_tagging_chain_pydantic(NameOfCandidateResponse, cfg.llm)
-        name_of_candidate_response = chain.run(doc)
-        logger.info(f"Response: {name_of_candidate_response}")
-        if cl_msg:
-            await cl_msg.stream_token(
-                f"Processing {name_of_candidate_response.name}\n\n"
+        try:
+            name_of_candidate_response = chain.run(doc)
+            logger.info(f"Response: {name_of_candidate_response}")
+            if cl_msg:
+                await cl_msg.stream_token(
+                    f"Processing {name_of_candidate_response.name}\n\n"
+                )
+            number_of_year_responses: List[NumberOfYearsResponseWithWeight] = []
+            process_skills(doc, number_of_year_responses, skills, weights)
+            candidate_info = CandidateInfo(
+                name_of_candidate_response=name_of_candidate_response,
+                number_of_years_responses=number_of_year_responses,
+                source_file=doc.metadata["source"],
             )
-        number_of_year_responses: List[NumberOfYearsResponseWithWeight] = []
-        process_skills(doc, number_of_year_responses, skills, weights)
-        candidate_info = CandidateInfo(
-            name_of_candidate_response=name_of_candidate_response,
-            number_of_years_responses=number_of_year_responses,
-            source_file=doc.metadata["source"],
-        )
-        candidate_infos.append(candidate_info),
+            candidate_infos.append(candidate_info)
+        except Exception as e:
+            logger.error(f"Could not process {doc.metadata['source']} due to {e}")
     return candidate_infos
 
 
@@ -67,11 +70,14 @@ def process_skills(
 ):
     page_content = doc.page_content
     for skill, weight in zip(skills, weights):
+        # Create skill schema dynamically
         schema, has_skill_field, number_of_years_field = create_skill_schema(skill)
         chain = create_tagging_chain(schema, cfg.llm)
         # Combine the CV with a question
         doc.page_content = SKILL_TEMPLATE.format(technology=skill) + page_content
+        # Run the chain
         number_of_years_response_json = chain.run(doc)
+        # Extract the results
         number_of_years = (
             0
             if number_of_years_response_json[number_of_years_field] == None
