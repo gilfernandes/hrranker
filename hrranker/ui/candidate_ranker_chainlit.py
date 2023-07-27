@@ -17,15 +17,6 @@ MAX_FILES = 10
 TiMEOUT = 300
 
 
-def write_temp_file(file) -> Document:
-    temp_doc_location = cfg.temp_doc_location
-    new_path = temp_doc_location / (file.name)
-    logger.info(f"new path: {new_path}")
-    with open(new_path, "wb") as f:
-        f.write(file.content)
-    return convert_pdf_to_document(new_path)
-
-
 @cl.on_chat_start
 async def init():
     while True:
@@ -117,6 +108,15 @@ async def handle_rankings(skills: List[str], weights: List[int]):
 
             result_message = cl.Message(content=ranking_text, elements=elements)
             await result_message.send()
+
+
+def write_temp_file(file) -> Document:
+    temp_doc_location = cfg.temp_doc_location
+    new_path = temp_doc_location / (file.name)
+    logger.info(f"new path: {new_path}")
+    with open(new_path, "wb") as f:
+        f.write(file.content)
+    return convert_pdf_to_document(new_path)
 
 
 async def execute_candidates(candidate_infos: List[CandidateInfo]):

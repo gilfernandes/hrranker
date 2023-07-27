@@ -34,10 +34,10 @@ pip install -e .
 
 For development:
 ```
-chainlit run ./hrranker/ui/candidate_ranker_chainlit.py --port 8081 -w
+chainlit run ./hrranker/ui/candidate_ranker_chainlit.py --port 8082 -w
 ```
 
 Normally:
 ```
-chainlit run ./hrranker/ui/candidate_ranker_chainlit.py --port 8081
+chainlit run ./hrranker/ui/candidate_ranker_chainlit.py --port 8082
 ```
