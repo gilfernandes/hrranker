@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -38,13 +38,15 @@ class NumberOfYearsResponse(BaseModel):
     skill: str
 
 
-def create_skill_schema(skill: str) -> Dict[str, Any]:
+def create_skill_schema(skill: str) -> Tuple[Dict[str, Any], str, str]:
     skill = skill.replace(" ", "_")
     has_skill_field = f"document_mentions_{skill}_experience"
     number_of_years_field = f"number_of_years_with_{skill}"
     schema = {
         "properties": {
-            has_skill_field: {"type": "boolean"},
+            has_skill_field: {
+                "type": "boolean",
+            },
             number_of_years_field: {"type": "integer"},
             "skill": {"type": "string"},
         }
@@ -99,36 +101,6 @@ number_of_years_response_schema = NumberOfYearsResponse.schema()
 number_of_years_description = (
     "Get user answer or reply with 0 for the number of years and 'unknown' for skill"
 )
-
-questions_schemas: List[Any] = [
-    {
-        "question": "Which is the name, age and gender of the candidate?",
-        "schema": name_of_candidate_response_schema,
-        "class": NameOfCandidateResponse,
-        "description": "Get user answer or reply with 0 for age or 'unknown' for name and gender if you do not know",
-    },
-    {
-        "question": "How many years of experience with Wordpress does this candidate have?",
-        "schema": number_of_years_response_schema,
-        "class": NumberOfYearsResponse,
-        "description": number_of_years_description,
-        "year_weight": 3,
-    },
-    {
-        "question": "How many years of experience with PHP development does this candidate have?",
-        "schema": number_of_years_response_schema,
-        "class": NumberOfYearsResponse,
-        "description": number_of_years_description,
-        "year_weight": 2,
-    },
-    {
-        "question": "How many years of experience with Javascript development does this candidate have?",
-        "schema": number_of_years_response_schema,
-        "class": NumberOfYearsResponse,
-        "description": number_of_years_description,
-        "year_weight": 1,
-    },
-]
 
 
 def parse_name_of_candidate_json(res: Dict) -> NameOfCandidateResponse:

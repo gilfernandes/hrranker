@@ -3,7 +3,7 @@
 from pydantic.tools import parse_obj_as
 from langchain.schema import Document
 
-from typing import List, Any, Tuple
+from typing import List, Any
 
 import openai
 import json
@@ -15,7 +15,6 @@ from hrranker.hr_model import (
     NumberOfYearsResponseWithWeight,
     parse_name_of_candidate_json,
     parse_number_of_year_response_json,
-    questions_schemas,
     sort_candidate_infos,
 )
 from hrranker.extract_data import extract_data
@@ -74,6 +73,37 @@ QUESTION: {question_schema["question"]}
         number_of_years_responses=number_of_year_responses,
         source_file=doc.metadata["source"],
     )
+
+
+questions_schemas: List[Any] = [
+    {
+        "question": "Which is the name, age and gender of the candidate?",
+        "schema": name_of_candidate_response_schema,
+        "class": NameOfCandidateResponse,
+        "description": "Get user answer or reply with 0 for age or 'unknown' for name and gender if you do not know",
+    },
+    {
+        "question": "How many years of experience with Wordpress does this candidate have?",
+        "schema": number_of_years_response_schema,
+        "class": NumberOfYearsResponse,
+        "description": number_of_years_description,
+        "year_weight": 3,
+    },
+    {
+        "question": "How many years of experience with PHP development does this candidate have?",
+        "schema": number_of_years_response_schema,
+        "class": NumberOfYearsResponse,
+        "description": number_of_years_description,
+        "year_weight": 2,
+    },
+    {
+        "question": "How many years of experience with Javascript development does this candidate have?",
+        "schema": number_of_years_response_schema,
+        "class": NumberOfYearsResponse,
+        "description": number_of_years_description,
+        "year_weight": 1,
+    },
+]
 
 
 if __name__ == "__main__":
