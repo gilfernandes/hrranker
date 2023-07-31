@@ -46,10 +46,14 @@ def create_skill_schema(skill: str) -> Tuple[Dict[str, Any], str, str]:
         "properties": {
             has_skill_field: {
                 "type": "boolean",
+                "description": f"describes whether the candidate has experience with {skill}",
             },
-            number_of_years_field: {"type": "integer"},
-            "skill": {"type": "string"},
-        }
+            number_of_years_field: {
+                "type": "integer",
+                "description": f"describes how many years of experience the candidate has with {skill}. This should be zeo in case the skill {skill} is not mentioned.",
+            },
+        },
+        "required": [has_skill_field, number_of_years_field],
     }
     return schema, has_skill_field, number_of_years_field
 

@@ -14,7 +14,7 @@ from typing import List, Any
 from pathlib import Path
 
 MAX_FILES = 10
-TiMEOUT = 300
+TiMEOUT = 600
 
 
 @cl.on_chat_start
@@ -72,6 +72,8 @@ async def gather_elements(content: str, item_name: str, previous_elements: List[
 
 async def handle_rankings(skills: List[str], weights: List[int]):
     files = []
+    docs = []
+    file_names = ""
 
     # Wait for the user to upload a file
     while not files:
@@ -83,31 +85,47 @@ async def handle_rankings(skills: List[str], weights: List[int]):
         ).send()
 
         if files is not None:
-            file_names = "\n- ".join([f"{f.name}" for f in files])
-            docs = [write_temp_file(file) for file in files]
+            file_names += "\n- ".join([f"{f.name}" for f in files])
 
-            msg = cl.Message(content="")
-            await msg.stream_token(
-                f"### Processing \n\n- {file_names}. \n\nYou have currently **{len(docs)}** files.\n\n"
-            )
+            docs.extend([write_temp_file(file) for file in files])
 
-            candidate_infos = await process_docs(docs, skills, weights, msg)
-            candidate_infos: List[CandidateInfo] = sort_candidate_infos(candidate_infos)
+            res = await cl.AskUserMessage(
+                content=f"You have uploaded {len(docs)} documents. Any more documents? (y/n)",
+                timeout=TiMEOUT,
+                raise_on_timeout=False,
+            ).send()
 
-            ranking_text = await execute_candidates(candidate_infos)
+            if res["content"].lower() in ["n", "no", "nope"]:
+                break
+            else:
+                files = None
 
-            barchart_image = create_barchart(candidate_infos)
-            elements = [
-                cl.Image(
-                    name="image1",
-                    display="inline",
-                    path=str(barchart_image.absolute()),
-                    size="large",
-                )
-            ]
+    await process_ranking_with_files(skills, weights, file_names, docs)
 
-            result_message = cl.Message(content=ranking_text, elements=elements)
-            await result_message.send()
+
+async def process_ranking_with_files(skills, weights, file_names, docs):
+    msg = cl.Message(content="")
+    await msg.stream_token(
+        f"### Processing \n\n- {file_names}. \n\nYou have currently **{len(docs)}** files.\n\n"
+    )
+
+    candidate_infos = await process_docs(docs, skills, weights, msg)
+    candidate_infos: List[CandidateInfo] = sort_candidate_infos(candidate_infos)
+
+    ranking_text = await execute_candidates(candidate_infos)
+
+    barchart_image = create_barchart(candidate_infos)
+    elements = [
+        cl.Image(
+            name="image1",
+            display="inline",
+            path=str(barchart_image.absolute()),
+            size="large",
+        )
+    ]
+
+    result_message = cl.Message(content=ranking_text, elements=elements)
+    await result_message.send()
 
 
 def write_temp_file(file) -> Document:

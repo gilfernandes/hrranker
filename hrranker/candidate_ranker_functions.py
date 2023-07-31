@@ -16,6 +16,9 @@ from hrranker.hr_model import (
     parse_name_of_candidate_json,
     parse_number_of_year_response_json,
     sort_candidate_infos,
+    name_of_candidate_response_schema,
+    number_of_years_response_schema,
+    number_of_years_description,
 )
 from hrranker.extract_data import extract_data
 from hrranker.config import cfg
