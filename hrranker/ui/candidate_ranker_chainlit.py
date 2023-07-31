@@ -142,8 +142,8 @@ async def execute_candidates(candidate_infos: List[CandidateInfo]):
     for i, condidate_info in enumerate(candidate_infos):
         personal_data = condidate_info.name_of_candidate_response
         source_file = Path(condidate_info.source_file)
-        ranking_text += f"{i + 1}. Name: {personal_data.name}, Email: {personal_data.email}, points: {condidate_info.score}\n\n"
-        ranking_text += f"*{source_file.stem}*\n\n"
+        ranking_text += f"{i + 1}. Name: **{personal_data.name}**, Email: {personal_data.email}, points: {condidate_info.score}\n\n"
+        ranking_text += f"*{source_file.name}*\n\n"
         for nyr in condidate_info.number_of_years_responses:
             number_of_years_response = nyr.number_of_years_response
             ranking_text += f"  - Skill: {number_of_years_response.skill}, years: {number_of_years_response.number_of_years_with_skill}\n"

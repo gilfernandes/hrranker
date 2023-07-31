@@ -43,7 +43,7 @@ async def process_docs(
     for doc in docs:
         chain = create_tagging_chain_pydantic(NameOfCandidateResponse, cfg.llm)
         try:
-            name_of_candidate_response = chain.run(doc)
+            name_of_candidate_response = await chain.arun(doc)
             logger.info(f"Response: {name_of_candidate_response}")
             if cl_msg:
                 await cl_msg.stream_token(
