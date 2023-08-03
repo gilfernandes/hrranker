@@ -1,21 +1,22 @@
 from langchain.schema import Document
 from langchain.document_loaders import PyPDFium2Loader
 
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 
 from hrranker.log_init import logger
 from hrranker.config import cfg
 
 
-def extract_data(path: Path) -> List[Document]:
+def extract_data(path: Path, filter: Optional[str]) -> List[Document]:
     assert path.exists(), f"Path {path} does not exist."
     res: List[Document] = []
     pdfs = list(path.glob("*.pdf"))
     logger.info(f"There are {len(pdfs)} physical documents.")
     for pdf in pdfs:
-        new_document = convert_pdf_to_document(pdf)
-        res.append(new_document)
+        if filter is None or filter in pdf.stem:
+            new_document = convert_pdf_to_document(pdf)
+            res.append(new_document)
     return res
 
 

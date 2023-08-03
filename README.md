@@ -14,7 +14,8 @@ First create an environment with Conda:
 # conda remove -n langchain_hrranker --all
 conda create -n langchain_hrranker python=3.11
 conda activate langchain_hrranker
-pip install chainlit
+# pip install chainlit
+pip install --force-reinstall \\wsl.localhost\Ubuntu\home\gilf\chainlit\src\dist\chainlit-0.6.1.1-py3-none-any.whl
 pip install langchain
 pip install pdfminer
 pip install pypdfium2

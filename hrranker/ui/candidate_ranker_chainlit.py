@@ -13,7 +13,7 @@ from typing import List, Any
 
 from pathlib import Path
 
-MAX_FILES = 10
+MAX_FILES = 20
 TiMEOUT = 600
 
 

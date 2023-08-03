@@ -8,10 +8,11 @@ load_dotenv()
 
 
 class Config:
-    model = "gpt-3.5-turbo-0613"
-    # model = 'gpt-4-0613'
+    # model = "gpt-3.5-turbo-0613"
+    model = 'gpt-4-0613'
     llm = ChatOpenAI(model=model, temperature=0)
     doc_location = Path(os.getenv("DOC_LOCATION"))
+    test_doc_location = Path(os.getenv("TEST_DOCS"))
     openai_api_key = os.getenv("OPENAI_API_KEY")
     temp_doc_location = Path(os.getenv("TEMP_DOC_LOCATION"))
 

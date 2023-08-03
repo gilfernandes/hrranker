@@ -20,7 +20,9 @@ import asyncio
 import chainlit
 
 SKILL_TEMPLATE = PromptTemplate.from_template(
-    "Based on the following text, how many years does this person have in {technology}.? And tell whether this person has experience with {technology}.\n\n"
+    "Based on the following text, how many years does this person have in {technology}.? " + 
+    "And tell whether this person has experience in {technology}." +
+    "If a person has experience in {technology} but you cannot figure out the years reply with 1.\n\n"
 )
 SKILLS = [
     "Wordpress",
