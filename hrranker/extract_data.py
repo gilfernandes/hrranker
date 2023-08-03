@@ -8,7 +8,7 @@ from hrranker.log_init import logger
 from hrranker.config import cfg
 
 
-def extract_data(path: Path, filter: Optional[str]) -> List[Document]:
+def extract_data(path: Path, filter: Optional[str] = None) -> List[Document]:
     assert path.exists(), f"Path {path} does not exist."
     res: List[Document] = []
     pdfs = list(path.glob("*.pdf"))

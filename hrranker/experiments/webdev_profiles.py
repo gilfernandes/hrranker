@@ -8,7 +8,7 @@ from hrranker.candidate_ranker_langchain import extract_data, process_docs, sort
 
 async def main():
     path = cfg.test_doc_location
-    docs = extract_data(path, "Ashwini_Sadamate")
+    docs = extract_data(path, "Bharat")
     logger.info(f"Read {len(docs)} documents")
     skills = [s.strip() for s in 'Adobe Xd, Figma, HTML, CSS'.split(",")]
     candidate_infos = await process_docs(docs, 

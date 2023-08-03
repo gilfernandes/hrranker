@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Any, Dict, Tuple
+from typing import List, Any, Dict, Tuple, Optional
 
 from pydantic import BaseModel, Field
 
@@ -7,7 +7,7 @@ from hrranker.log_init import logger
 
 
 class NameOfCandidateResponse(BaseModel):
-    name: str = Field(
+    name: Optional[str] = Field(
         ...,
         description="the name of the candidate if available in the text",
     )
@@ -15,7 +15,7 @@ class NameOfCandidateResponse(BaseModel):
         ...,
         description="the email address of the candidate if available in the text",
     )
-    age: int = Field(
+    age: Optional[int] = Field(
         ...,
         description="the age of the candidate if available in the text",
     )
