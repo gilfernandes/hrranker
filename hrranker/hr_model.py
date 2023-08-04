@@ -24,6 +24,24 @@ class NameOfCandidateResponse(BaseModel):
         description="describes whether the candidate is male or female. It can e empty if this is not clear from the text.",
         enum=["female", "male", "unknown", "none"],
     )
+    years_of_experience: Optional[int] = Field(
+        ...,
+        description="total years of professional experience",
+    )
+
+
+class TechnicalKeywords(BaseModel):
+    keywords: List[str] = Field(
+        ...,
+        description="list of keywords which seem to be a technology or a skill",
+    )
+
+
+class NameExtraction(BaseModel):
+    person_full_name: list[str] = Field(
+        ...,
+        description="name of a person that can have one or two parts, the first and lastname. IT should never contain the word 'CutShort'",
+    )
 
 
 class NumberOfYearsResponse(BaseModel):
@@ -82,6 +100,9 @@ class CandidateInfo:
 
     def calculate_score(self):
         score = 0
+        years_of_experience = self.name_of_candidate_response.years_of_experience
+        if years_of_experience is None:
+            years_of_experience = 0
         for number_of_years_response in self.number_of_years_responses:
             nyr = number_of_years_response.number_of_years_response
             if nyr.has_skill:
@@ -89,7 +110,7 @@ class CandidateInfo:
                     nyr.number_of_years_with_skill
                     * number_of_years_response.score_weight
                 )
-        self.score = score
+        self.score = score + years_of_experience
 
     def __repr__(self) -> str:
         return f"Name: {self.name_of_candidate_response.name}, score: {self.score}, source_file: {self.source_file}"
