@@ -23,9 +23,9 @@ import asyncio
 import chainlit
 
 SKILL_TEMPLATE = PromptTemplate.from_template(
-    "Based on the following text, how many years does this person have in {technology}.? " + 
-    "And tell whether this person has experience in {technology}." +
-    "If a person has experience in {technology} but you cannot figure out the years reply with 1.\n\n"
+    "Based on the following text, how many years does this person have in {technology}.? "
+    + "And tell whether this person has experience in {technology}."
+    + "If a person has experience in {technology} but you cannot figure out the years reply with 1.\n\n"
 )
 SKILLS = [
     "Wordpress",
@@ -49,9 +49,7 @@ async def process_docs(
     extracted_strs = ",".join([str(ep[1]) for ep in expression_pairs])
     logger.info("Keywords: %s", extracted_strs)
     if cl_msg:
-        await cl_msg.stream_token(
-            f"Extracted keywords: **{extracted_strs}**\n\n"
-        )
+        await cl_msg.stream_token(f"Extracted keywords: **{extracted_strs}**\n\n")
     for doc in docs:
         chain = create_tagging_chain_pydantic(NameOfCandidateResponse, cfg.llm)
         try:
@@ -60,11 +58,11 @@ async def process_docs(
             if candidate_details.name is None or candidate_details.name == "":
                 candidate_details.name = " ".join(extract_name(doc.metadata["source"]))
             if cl_msg:
-                await cl_msg.stream_token(
-                    f"Processing {candidate_details.name}\n\n"
-                )
+                await cl_msg.stream_token(f"Processing {candidate_details.name}\n\n")
             number_of_year_responses: List[NumberOfYearsResponseWithWeight] = []
-            process_skills(doc, number_of_year_responses, expression_pairs, skills, weights)
+            process_skills(
+                doc, number_of_year_responses, expression_pairs, skills, weights
+            )
             candidate_info = CandidateInfo(
                 name_of_candidate_response=candidate_details,
                 number_of_years_responses=number_of_year_responses,
@@ -74,7 +72,6 @@ async def process_docs(
         except Exception as e:
             logger.error(f"Could not process {doc.metadata['source']} due to {e}")
     return candidate_infos
-    
 
 
 def process_skills(
@@ -113,7 +110,7 @@ def process_skills(
             logger.info("Cannot find keywords: %s", extracted_keywords)
         else:
             if number_of_years == 0:
-                number_of_years = 1 # Assume the skill is there at least for one year
+                number_of_years = 1  # Assume the skill is there at least for one year
                 has_skill = True
         number_of_years_response = NumberOfYearsResponse(
             has_skill=has_skill, number_of_years_with_skill=number_of_years, skill=skill
@@ -125,7 +122,6 @@ def process_skills(
             )
         )
         logger.info(f"Response: {number_of_years_response}")
-
 
 
 if __name__ == "__main__":
@@ -141,7 +137,6 @@ if __name__ == "__main__":
         logger.info("")
         for candidate_info in candidate_infos:
             logger.info(candidate_info)
-
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())

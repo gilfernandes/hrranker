@@ -112,8 +112,6 @@ async def process_ranking_with_files(skills, weights, file_names, docs):
     candidate_infos = await process_docs(docs, skills, weights, msg)
     candidate_infos: List[CandidateInfo] = sort_candidate_infos(candidate_infos)
 
-    ranking_text = await execute_candidates(candidate_infos)
-
     barchart_image = create_barchart(candidate_infos)
     elements = [
         cl.Image(
@@ -124,7 +122,12 @@ async def process_ranking_with_files(skills, weights, file_names, docs):
         )
     ]
 
-    result_message = cl.Message(content=ranking_text, elements=elements)
+    barchart_message = cl.Message(content="## Results", elements=elements)
+    await barchart_message.send()
+
+    ranking_text = await execute_candidates(candidate_infos)
+
+    result_message = cl.Message(content=ranking_text)
     await result_message.send()
 
 
@@ -139,7 +142,21 @@ def write_temp_file(file) -> Document:
 
 async def execute_candidates(candidate_infos: List[CandidateInfo]):
     ranking_text = "## Ranking\n\n"
-    for i, condidate_info in enumerate(candidate_infos):
+
+    def ranking_generator():
+        for i, condidate_info in enumerate(candidate_infos):
+            personal_data = condidate_info.name_of_candidate_response
+            source_file = Path(condidate_info.source_file)
+            yield i, condidate_info, personal_data, source_file
+
+    for i, condidate_info, personal_data, source_file in ranking_generator():
+        personal_data = condidate_info.name_of_candidate_response
+        source_file = Path(condidate_info.source_file)
+        ranking_text += f"{i + 1}. Name: **{personal_data.name}**"
+        ranking_text += f"*{source_file.name}*\n\n"
+
+    ranking_text += "## Breakdown\n\n"
+    for i, condidate_info, personal_data, source_file in ranking_generator():
         personal_data = condidate_info.name_of_candidate_response
         source_file = Path(condidate_info.source_file)
         ranking_text += f"{i + 1}. Name: **{personal_data.name}**, Email: {personal_data.email}, Experience: {personal_data.years_of_experience}, points: {condidate_info.score}\n\n"

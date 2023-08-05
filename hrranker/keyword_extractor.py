@@ -18,7 +18,13 @@ def extract_keywords(expression_list: List[str]) -> List[Any]:
 
 
 if __name__ == "__main__":
-    expression_list = ["Programming in PHP", "Wordpress", "CSS", "Experience with HTML", 'Figma']
+    expression_list = [
+        "Programming in PHP",
+        "Wordpress",
+        "CSS",
+        "Experience with HTML",
+        "Figma",
+    ]
     res = extract_keywords(expression_list=expression_list)
     logger.info("Result: %s", res)
-    assert 'php' in res[0][1]
+    assert "php" in res[0][1]
