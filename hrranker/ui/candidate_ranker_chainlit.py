@@ -9,7 +9,7 @@ from hrranker.extract_data import convert_pdf_to_document
 from hrranker.config import cfg
 from hrranker.hr_model import CandidateInfo
 
-from typing import List, Any
+from typing import List, Any, Optional
 
 from pathlib import Path
 
@@ -125,10 +125,8 @@ async def process_ranking_with_files(skills, weights, file_names, docs):
     barchart_message = cl.Message(content="## Results", elements=elements)
     await barchart_message.send()
 
-    ranking_text = await execute_candidates(candidate_infos)
+    await execute_candidates(candidate_infos)
 
-    result_message = cl.Message(content=ranking_text)
-    await result_message.send()
 
 
 def write_temp_file(file) -> Document:
@@ -140,29 +138,42 @@ def write_temp_file(file) -> Document:
     return convert_pdf_to_document(new_path)
 
 
+def ranking_generator(candidate_infos: List[CandidateInfo]):
+    for i, condidate_info in enumerate(candidate_infos):
+        personal_data = condidate_info.name_of_candidate_response
+        source_file = Path(condidate_info.source_file)
+        yield i, condidate_info, personal_data, source_file
+
+
 async def execute_candidates(candidate_infos: List[CandidateInfo]):
+
     ranking_text = "## Ranking\n\n"
-
-    def ranking_generator():
-        for i, condidate_info in enumerate(candidate_infos):
-            personal_data = condidate_info.name_of_candidate_response
-            source_file = Path(condidate_info.source_file)
-            yield i, condidate_info, personal_data, source_file
-
-    for i, condidate_info, personal_data, source_file in ranking_generator():
+    for i, condidate_info, personal_data, source_file in ranking_generator(candidate_infos):
         personal_data = condidate_info.name_of_candidate_response
         source_file = Path(condidate_info.source_file)
         ranking_text += f"{i + 1}. Name: **{personal_data.name}**"
-        ranking_text += f"*{source_file.name}*\n\n"
+        ranking_text += f"* {source_file.name}*\n\n"
 
-    ranking_text += "## Breakdown\n\n"
-    for i, condidate_info, personal_data, source_file in ranking_generator():
+    randking_message = cl.Message(content=ranking_text)
+    await randking_message.send()
+
+    await cl.Message(content="## Breakdown\n\n").send()
+
+    for i, condidate_info, personal_data, source_file in ranking_generator(candidate_infos):
+        pdf_element = create_pdf(source_file)
         personal_data = condidate_info.name_of_candidate_response
         source_file = Path(condidate_info.source_file)
+        ranking_text = ""
         ranking_text += f"{i + 1}. Name: **{personal_data.name}**, Email: {personal_data.email}, Experience: {personal_data.years_of_experience}, points: {condidate_info.score}\n\n"
-        ranking_text += f"*{source_file.name}*\n\n"
+        ranking_text += f"*{source_file}*\n\n"
         for nyr in condidate_info.number_of_years_responses:
             number_of_years_response = nyr.number_of_years_response
             ranking_text += f"  - Skill: {number_of_years_response.skill}, years: {number_of_years_response.number_of_years_with_skill}\n"
+        await cl.Message(content=ranking_text, elements=[pdf_element]).send()
 
-    return ranking_text
+
+
+def create_pdf(source_file: Path) -> Optional[cl.File]:
+    return cl.File(
+        name=source_file.name, display="inline", path=str(source_file.absolute())
+    )
