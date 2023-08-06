@@ -14,7 +14,7 @@ from typing import List, Any, Optional
 from pathlib import Path
 
 MAX_FILES = 20
-TiMEOUT = 600
+TiMEOUT = 1200
 
 
 @cl.on_chat_start
@@ -95,7 +95,12 @@ async def handle_rankings(skills: List[str], weights: List[int]):
                 raise_on_timeout=False,
             ).send()
 
-            if res["content"].lower() in ["n", "no", "nope"]:
+            if res is None:
+                await cl.Message(
+                    content=f"Process failed. Please restart.",
+                ).send()
+                files = None
+            elif res["content"].lower() in ["n", "no", "nope"]:
                 break
             else:
                 files = None
