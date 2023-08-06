@@ -5,7 +5,7 @@ import chainlit as cl
 
 from hrranker.candidate_ranker_langchain import process_docs, sort_candidate_infos
 from hrranker.log_init import logger
-from hrranker.extract_data import convert_pdf_to_document
+from hrranker.extract_data import convert_pdf_to_document_failsafe
 from hrranker.config import cfg
 from hrranker.hr_model import CandidateInfo
 
@@ -72,7 +72,7 @@ async def gather_elements(content: str, item_name: str, previous_elements: List[
 
 async def handle_rankings(skills: List[str], weights: List[int]):
     files = []
-    docs = []
+    docs: List[Document] = []
     file_names = ""
 
     # Wait for the user to upload a file
@@ -87,7 +87,7 @@ async def handle_rankings(skills: List[str], weights: List[int]):
         if files is not None:
             file_names += "\n- ".join([f"{f.name}" for f in files])
 
-            docs.extend([write_temp_file(file) for file in files])
+            await process_file_extraction(docs, files)
 
             res = await cl.AskUserMessage(
                 content=f"You have uploaded {len(docs)} documents. Any more documents? (y/n)",
@@ -101,6 +101,18 @@ async def handle_rankings(skills: List[str], weights: List[int]):
                 files = None
 
     await process_ranking_with_files(skills, weights, file_names, docs)
+
+
+async def process_file_extraction(docs: List[Document], files: List[str]):
+    msg = cl.Message(content="")
+    await msg.stream_token(
+        f"Processed\n\n"
+    )
+    for file in files:
+        docs.append(extract_and_write_temp_file(file))
+        await msg.stream_token(
+            f"- {file.name}.\n\n"
+        )
 
 
 async def process_ranking_with_files(skills, weights, file_names, docs):
@@ -129,13 +141,13 @@ async def process_ranking_with_files(skills, weights, file_names, docs):
 
 
 
-def write_temp_file(file) -> Document:
+def extract_and_write_temp_file(file) -> Document:
     temp_doc_location = cfg.temp_doc_location
     new_path = temp_doc_location / (file.name)
     logger.info(f"new path: {new_path}")
     with open(new_path, "wb") as f:
         f.write(file.content)
-    return convert_pdf_to_document(new_path)
+    return convert_pdf_to_document_failsafe(new_path)
 
 
 def ranking_generator(candidate_infos: List[CandidateInfo]):

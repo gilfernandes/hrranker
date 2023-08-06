@@ -1,3 +1,4 @@
+
 from langchain.schema import Document
 from langchain.document_loaders import PyPDFium2Loader
 
@@ -6,6 +7,7 @@ from pathlib import Path
 
 from hrranker.log_init import logger
 from hrranker.config import cfg
+from hrranker.image_ocr import convert_pdf_to_doc
 
 
 def extract_data(path: Path, filter: Optional[str] = None) -> List[Document]:
@@ -15,9 +17,18 @@ def extract_data(path: Path, filter: Optional[str] = None) -> List[Document]:
     logger.info(f"There are {len(pdfs)} physical documents.")
     for pdf in pdfs:
         if filter is None or filter in pdf.stem:
-            new_document = convert_pdf_to_document(pdf)
-            res.append(new_document)
+            res.append(convert_pdf_to_document_failsafe(pdf))
     return res
+
+
+
+def convert_pdf_to_document_failsafe(pdf: Path) -> Document:
+    try:
+        return convert_pdf_to_doc(pdf)
+    except Exception as e:
+        logger.error("Failed to extract pdf as image due to %s", e)
+        return convert_pdf_to_document(pdf)
+
 
 
 def convert_pdf_to_document(pdf: Path) -> Document:

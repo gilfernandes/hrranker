@@ -17,11 +17,17 @@ conda activate langchain_hrranker
 # pip install chainlit
 pip install --force-reinstall \\wsl.localhost\Ubuntu\home\gilf\chainlit\src\dist\chainlit-0.6.1.1-py3-none-any.whl
 pip install langchain
-pip install pdfminer
-pip install pypdfium2
+pip install pdfminer pypdfium2 pdf2image
+conda install -c conda-forge pytesseract
+conda install -c conda-forge poppler
+pip install opencv-python
 pip install -U matplotlib
+pip install --force-reinstall C:\development\playground\langchain\hr_image_ranker\pdf_image_ocr-1.0-py3-none-any.whl
 pip install -e .
 pip install black
+
+
+
 
 ```
 

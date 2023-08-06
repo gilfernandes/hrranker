@@ -2,9 +2,13 @@ from langchain.chat_models import ChatOpenAI
 from pathlib import Path
 import os
 
+import pytesseract
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
+from pdf_image_ocr.config import cfg as image_cfg
 
 
 class Config:
@@ -31,3 +35,5 @@ cfg = Config()
 
 if __name__ == "__main__":
     print(cfg)
+    print(image_cfg)
+    print(pytesseract.pytesseract.tesseract_cmd)
