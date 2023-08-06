@@ -111,13 +111,15 @@ async def handle_rankings(skills: List[str], weights: List[int]):
 async def process_file_extraction(docs: List[Document], files: List[str]):
     msg = cl.Message(content="")
     await msg.stream_token(
-        f"Processed\n\n"
+        f"Processing\n\n"
     )
     for file in files:
         docs.append(extract_and_write_temp_file(file))
         await msg.stream_token(
             f"- {file.name}.\n\n"
         )
+
+    await msg.send()
 
 
 async def process_ranking_with_files(skills, weights, file_names, docs):
