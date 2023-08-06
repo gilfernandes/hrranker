@@ -115,11 +115,9 @@ async def process_file_extraction(docs: List[Document], files: List[str]):
     )
     for file in files:
         docs.append(extract_and_write_temp_file(file))
-        await msg.stream_token(
-            f"- {file.name}.\n\n"
-        )
-
-    await msg.send()
+        await cl.Message(
+            content=f"- {file.name}.\n\n"
+        ).send()
 
 
 async def process_ranking_with_files(skills, weights, file_names, docs):
