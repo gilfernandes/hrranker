@@ -24,7 +24,9 @@ def extract_data(path: Path, filter: Optional[str] = None) -> List[Document]:
 
 def convert_pdf_to_document_failsafe(pdf: Path) -> Document:
     try:
-        return convert_pdf_to_doc(pdf)
+        converted = convert_pdf_to_doc(pdf)
+        logger.info("Converted %s", pdf)
+        return converted
     except Exception as e:
         logger.error("Failed to extract pdf as image due to %s", e)
         return convert_pdf_to_document(pdf)
