@@ -27,8 +27,6 @@ pip install -e .
 pip install black
 
 
-
-
 ```
 
 To install as a package, please use:

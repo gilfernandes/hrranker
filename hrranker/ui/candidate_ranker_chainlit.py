@@ -1,6 +1,7 @@
 from hrranker.plot.hr_rank_plot import create_barchart
 from langchain.schema import Document
 import chainlit as cl
+from asyncer import asyncify
 
 
 from hrranker.candidate_ranker_langchain import process_docs, sort_candidate_infos
@@ -8,6 +9,7 @@ from hrranker.log_init import logger
 from hrranker.extract_data import convert_pdf_to_document_failsafe
 from hrranker.config import cfg
 from hrranker.hr_model import CandidateInfo
+from hrranker.pdf_conversion_client import extract_text_from_pdf
 
 from typing import List, Any, Optional
 
@@ -109,15 +111,21 @@ async def handle_rankings(skills: List[str], weights: List[int]):
 
 
 async def process_file_extraction(docs: List[Document], files: List[str]):
-    msg = cl.Message(content="")
-    await msg.stream_token(
-        f"Processing\n\n"
-    )
+
+    await cl.Message(content="Processing ...\n\n").send()
     for file in files:
-        docs.append(extract_and_write_temp_file(file))
-        await cl.Message(
-            content=f"- {file.name}.\n\n"
-        ).send()
+        file_path = write_to_temp_folder(file)
+        extracted_text = await asyncify(extract_text_from_pdf)(pdf=file_path)
+        if extracted_text is not None:
+            docs.append(Document(page_content=extracted_text, metadata={'source': file_path.absolute()}))
+            await cl.Message(
+                content=f"- {file.name}.\n\n"
+            ).send()
+            logger.info("Processed %s", file_path)
+        else:
+            await cl.Message(
+                content=f"Failed to extract {file.name}.\n\n"
+            ).send()
 
 
 async def process_ranking_with_files(skills, weights, file_names, docs):
@@ -146,13 +154,18 @@ async def process_ranking_with_files(skills, weights, file_names, docs):
 
 
 
-def extract_and_write_temp_file(file) -> Document:
+# def extract_and_write_temp_file(file) -> Document:
+#     new_path = write_to_temp_folder(file)
+#     return convert_pdf_to_document_failsafe(new_path)
+
+
+def write_to_temp_folder(file) -> Path:
     temp_doc_location = cfg.temp_doc_location
     new_path = temp_doc_location / (file.name)
     logger.info(f"new path: {new_path}")
     with open(new_path, "wb") as f:
         f.write(file.content)
-    return convert_pdf_to_document_failsafe(new_path)
+    return new_path
 
 
 def ranking_generator(candidate_infos: List[CandidateInfo]):
@@ -169,7 +182,7 @@ async def execute_candidates(candidate_infos: List[CandidateInfo]):
         personal_data = condidate_info.name_of_candidate_response
         source_file = Path(condidate_info.source_file)
         ranking_text += f"{i + 1}. Name: **{personal_data.name}**"
-        ranking_text += f"* {source_file.name}*\n\n"
+        ranking_text += f" *{source_file.name}*\n\n"
 
     randking_message = cl.Message(content=ranking_text)
     await randking_message.send()

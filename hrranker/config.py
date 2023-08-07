@@ -19,6 +19,7 @@ class Config:
     test_doc_location = Path(os.getenv("TEST_DOCS"))
     openai_api_key = os.getenv("OPENAI_API_KEY")
     temp_doc_location = Path(os.getenv("TEMP_DOC_LOCATION"))
+    remote_pdf_server = os.getenv('REMOTE_PDF_SERVER')
 
     if not temp_doc_location.exists():
         temp_doc_location.mkdir(parents=True)

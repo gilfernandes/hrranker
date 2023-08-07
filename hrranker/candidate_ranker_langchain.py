@@ -4,6 +4,7 @@ from langchain import PromptTemplate
 from langchain.schema import Document
 from langchain.chains import create_tagging_chain_pydantic, create_tagging_chain
 from typing import List, Any
+from asyncer import asyncify
 
 from hrranker.extract_data import extract_data
 from hrranker.config import cfg
@@ -45,20 +46,20 @@ async def process_docs(
     cl_msg: chainlit.Message = None,
 ) -> List[CandidateInfo]:
     candidate_infos: List[CandidateInfo] = []
-    expression_pairs: List[Any] = extract_keywords(skills)
+    expression_pairs: List[Any] = await extract_keywords(skills)
     extracted_strs = ",".join([str(ep[1]) for ep in expression_pairs])
     logger.info("Keywords: %s", extracted_strs)
     if cl_msg:
         await cl_msg.stream_token(f"Extracted keywords: **{extracted_strs}**\n\n")
     for doc in docs:
-        chain = create_tagging_chain_pydantic(NameOfCandidateResponse, cfg.llm)
+        chain = await asyncify(create_tagging_chain_pydantic)(pydantic_schema=NameOfCandidateResponse, llm=cfg.llm)
         try:
             candidate_details = await chain.arun(doc)
             logger.info(f"Response: {candidate_details}")
             if candidate_details.name is None or candidate_details.name == "":
                 candidate_details.name = " ".join(extract_name(doc.metadata["source"]))
             if cl_msg:
-                await cl_msg.stream_token(f"Processing {candidate_details.name}\n\n")
+                await cl_msg.stream_token(f"Processed {candidate_details.name}\n\n")
             number_of_year_responses: List[NumberOfYearsResponseWithWeight] = []
             process_skills(
                 doc, number_of_year_responses, expression_pairs, skills, weights
@@ -71,6 +72,7 @@ async def process_docs(
             candidate_infos.append(candidate_info)
         except Exception as e:
             logger.error(f"Could not process {doc.metadata['source']} due to {e}")
+    logger.info("Processed all docs")
     return candidate_infos
 
 
