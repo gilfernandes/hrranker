@@ -150,13 +150,7 @@ async def process_ranking_with_files(skills, weights, file_names, docs):
     barchart_message = cl.Message(content="## Results", elements=elements)
     await barchart_message.send()
 
-    await execute_candidates(candidate_infos)
-
-
-
-# def extract_and_write_temp_file(file) -> Document:
-#     new_path = write_to_temp_folder(file)
-#     return convert_pdf_to_document_failsafe(new_path)
+    await display_candidates(candidate_infos)
 
 
 def write_to_temp_folder(file) -> Path:
@@ -175,7 +169,7 @@ def ranking_generator(candidate_infos: List[CandidateInfo]):
         yield i, condidate_info, personal_data, source_file
 
 
-async def execute_candidates(candidate_infos: List[CandidateInfo]):
+async def display_candidates(candidate_infos: List[CandidateInfo]):
 
     ranking_text = "## Ranking\n\n"
     for i, condidate_info, personal_data, source_file in ranking_generator(candidate_infos):
@@ -199,7 +193,12 @@ async def execute_candidates(candidate_infos: List[CandidateInfo]):
         for nyr in condidate_info.number_of_years_responses:
             number_of_years_response = nyr.number_of_years_response
             ranking_text += f"  - Skill: {number_of_years_response.skill}, years: {number_of_years_response.number_of_years_with_skill}\n"
-        await cl.Message(content=ranking_text, elements=[pdf_element]).send()
+        breakdown_list = []
+        for nyr in condidate_info.number_of_years_responses:
+            number_of_years_response = nyr.number_of_years_response
+            breakdown_list.append(f"{number_of_years_response.number_of_years_with_skill} * {nyr.score_weight}")
+        breakdown_text = " + ".join(breakdown_list)
+        await cl.Message(content=f"{ranking_text}\n\n{condidate_info.score} = {breakdown_text} + {personal_data.years_of_experience}", elements=[pdf_element]).send()
 
 
 

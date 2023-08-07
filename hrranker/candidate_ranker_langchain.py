@@ -61,7 +61,7 @@ async def process_docs(
             if cl_msg:
                 await cl_msg.stream_token(f"Processed {candidate_details.name}\n\n")
             number_of_year_responses: List[NumberOfYearsResponseWithWeight] = []
-            process_skills(
+            await process_skills(
                 doc, number_of_year_responses, expression_pairs, skills, weights
             )
             candidate_info = CandidateInfo(
@@ -76,7 +76,7 @@ async def process_docs(
     return candidate_infos
 
 
-def process_skills(
+async def process_skills(
     doc,
     number_of_year_responses,
     expression_pairs: List[Any],
@@ -92,7 +92,7 @@ def process_skills(
         # Combine the CV with a question
         doc.page_content = SKILL_TEMPLATE.format(technology=skill) + page_content
         # Run the chain
-        number_of_years_response_json = chain.run(doc)
+        number_of_years_response_json = await chain.arun(doc)
         # Extract the results
         number_of_years = (
             0
