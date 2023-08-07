@@ -112,14 +112,14 @@ async def handle_rankings(skills: List[str], weights: List[int]):
 
 async def process_file_extraction(docs: List[Document], files: List[str]):
 
-    await cl.Message(content="Processing ...\n\n").send()
-    for file in files:
+    await cl.Message(content="Extracting text from files ...\n\n").send()
+    for i, file in enumerate(files):
         file_path = await asyncify(write_to_temp_folder)(file=file)
         extracted_text = await asyncify(extract_text_from_pdf)(pdf=file_path)
         if extracted_text is not None:
             docs.append(Document(page_content=extracted_text, metadata={'source': file_path.absolute()}))
             await cl.Message(
-                content=f"- {file.name}.\n\n"
+                content=f"{i + 1}. {file.name}.\n\n"
             ).send()
             logger.info("Processed %s", file_path)
         else:
