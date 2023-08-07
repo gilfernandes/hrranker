@@ -114,7 +114,7 @@ async def process_file_extraction(docs: List[Document], files: List[str]):
 
     await cl.Message(content="Processing ...\n\n").send()
     for file in files:
-        file_path = write_to_temp_folder(file)
+        file_path = await asyncify(write_to_temp_folder)(file=file)
         extracted_text = await asyncify(extract_text_from_pdf)(pdf=file_path)
         if extracted_text is not None:
             docs.append(Document(page_content=extracted_text, metadata={'source': file_path.absolute()}))
