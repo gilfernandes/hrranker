@@ -1,12 +1,12 @@
-from hrranker.plot.hr_rank_plot import create_barchart
+
 from langchain.schema import Document
 import chainlit as cl
 from asyncer import asyncify
 
-
+from hrranker.plot.hr_rank_plot import create_barchart
+from hrranker.related_skills_extractor import extract_related_skills
 from hrranker.candidate_ranker_langchain import process_docs, sort_candidate_infos
 from hrranker.log_init import logger
-from hrranker.extract_data import convert_pdf_to_document_failsafe
 from hrranker.config import cfg
 from hrranker.hr_model import CandidateInfo
 from hrranker.pdf_conversion_client import extract_text_from_pdf
@@ -16,7 +16,9 @@ from typing import List, Any, Optional
 from pathlib import Path
 
 MAX_FILES = 20
-TiMEOUT = 1200
+TIMEOUT = 1200
+
+KEY_EXTENDED_SKILLS = 'extended_skills'
 
 
 @cl.on_chat_start
@@ -27,6 +29,7 @@ async def init():
             "skills",
             None,
         )
+        skills = await related_skills(skills)
         weights = await gather_elements(
             f"Please enter the list of ({len(skills)}) weights as a comma separated list, like e.g: `4, 3, 2, 1, 1`",
             "weights",
@@ -45,14 +48,17 @@ async def init():
     await handle_rankings(skills, weights)
 
 
+def split_skills(input: str) -> List[str]:
+    return [s.strip() for s in input["content"].split(",")]
+
 async def gather_elements(content: str, item_name: str, previous_elements: List[Any]):
     items = None
     while not items:
         res = await cl.AskUserMessage(
-            content=content, timeout=TiMEOUT, raise_on_timeout=False
+            content=content, timeout=TIMEOUT, raise_on_timeout=False
         ).send()
         if res:
-            items = [s.strip() for s in res["content"].split(",")]
+            items = split_skills(res)
             if previous_elements and len(items) != len(previous_elements):
                 await cl.Message(
                     content=f"The weights and the skills do not have the same length.",
@@ -66,10 +72,47 @@ async def gather_elements(content: str, item_name: str, previous_elements: List[
                 items_strings = items
             joined_str = "\n- ".join(items_strings)
             await cl.Message(
-                content=f"Your {item_name} are: \n- {joined_str}",
+                content=f"Your selected {item_name} are: \n- {joined_str}",
             ).send()
 
     return items
+
+
+@cl.action_callback("action_button")
+async def on_action(action):
+    skill: str = action.value
+    extended_skills = cl.user_session.get(KEY_EXTENDED_SKILLS)
+    extended_skills.append(skill)
+    await cl.Message(content=f"Added {skill}").send()
+    # Remove the action button from the chatbot user interface
+    # await action.remove()
+    
+
+
+async def related_skills(skills: List[str]) -> str:
+    extended_skills = [] + skills
+    cl.user_session.set(KEY_EXTENDED_SKILLS, extended_skills)
+    for skill in skills:
+        related_skills = await extract_related_skills(skill)
+        actions = []
+        for i, related_skill in enumerate(related_skills):
+            # Sending an action button within a chatbot message
+            actions.append(
+                cl.Action(
+                    name="action_button", 
+                    label=related_skill,
+                    value=related_skill, 
+                    description=f"{i}. {related_skill}"
+                )
+            )
+        await cl.Message(content=f"Extra skills for ({skill})", actions=actions).send()
+        res = await cl.AskUserMessage(
+            content="Would you like to include any extra skills? Enter 'ok' to continue.", timeout=TIMEOUT, raise_on_timeout=False
+        ).send()
+
+    await cl.Message(content=f"Current skills: {', '.join(extended_skills)}").send()
+    extended_skills = list(dict.fromkeys(extended_skills))
+    return extended_skills
 
 
 async def handle_rankings(skills: List[str], weights: List[int]):
@@ -83,7 +126,7 @@ async def handle_rankings(skills: List[str], weights: List[int]):
             content="Please upload multiple pdf files with the CV of a candidate!",
             accept=["application/pdf"],
             max_files=MAX_FILES,
-            timeout=TiMEOUT,
+            timeout=TIMEOUT,
         ).send()
 
         if files is not None:
@@ -93,7 +136,7 @@ async def handle_rankings(skills: List[str], weights: List[int]):
 
             res = await cl.AskUserMessage(
                 content=f"You have uploaded {len(docs)} documents. Any more documents? (y/n)",
-                timeout=TiMEOUT,
+                timeout=TIMEOUT,
                 raise_on_timeout=False,
             ).send()
 

@@ -56,6 +56,7 @@ class NumberOfYearsResponse(BaseModel):
     skill: str
 
 
+
 def create_skill_schema(skill: str) -> Tuple[Dict[str, Any], str, str]:
     skill = skill.replace(" ", "_")
     has_skill_field = f"document_mentions_{skill}_experience"
@@ -74,6 +75,30 @@ def create_skill_schema(skill: str) -> Tuple[Dict[str, Any], str, str]:
         "required": [has_skill_field, number_of_years_field],
     }
     return schema, has_skill_field, number_of_years_field
+
+
+def related_skills_schema(skill: str) -> List[str]:
+    return {
+        "title": "RelatedTopics",
+        "description": f"Contains topics related to {skill}",
+        "type": "object",
+        "properties": {
+            'related topics': {
+                "type": "array",
+                "description": f"Array of string with other topics related to {skill}",
+                "items": {
+                    "type": "string"
+                }
+            },
+            'related skills': {
+                "type": "array",
+                "description": f"Array of string with other work relatedd skills related to {skill}",
+                "items": {
+                    "type": "string"
+                }
+            }
+        }
+    }
 
 
 class NumberOfYearsResponseWithWeight(BaseModel):
