@@ -105,10 +105,13 @@ async def related_skills(skills: List[str]) -> str:
                     description=f"{i}. {related_skill}"
                 )
             )
-        await cl.Message(content=f"Extra skills for ({skill})", actions=actions).send()
-        res = await cl.AskUserMessage(
-            content="Would you like to include any extra skills? Enter 'ok' to continue.", timeout=TIMEOUT, raise_on_timeout=False
-        ).send()
+        await cl.Message(content=f"Extra skills for \"{skill}\"", actions=actions).send()
+        while True:
+            res = await cl.AskUserMessage(
+                content="Would you like to include any extra skills? Enter 'ok' to continue.", timeout=TIMEOUT, raise_on_timeout=False
+            ).send()
+            if 'content' in res and res['content'].lower() == 'ok':
+                break
 
     await cl.Message(content=f"Current skills: {', '.join(extended_skills)}").send()
     extended_skills = list(dict.fromkeys(extended_skills))
